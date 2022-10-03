@@ -1,0 +1,714 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:pPr><w:pStyle w:val="code"/></w:pPr><w:r><w:t><![CDATA[classdef app14 < matlab.apps.AppBase
+
+    % Properties that correspond to app components
+    properties (Access = public)
+        UIFigure                     matlab.ui.Figure
+        DataSignalTextArea           matlab.ui.control.TextArea
+        DataSignalTextAreaLabel      matlab.ui.control.Label
+        ASCIITextArea                matlab.ui.control.TextArea
+        ASCIITextAreaLabel           matlab.ui.control.Label
+        TextArea                     matlab.ui.control.TextArea
+        TextAreaLabel                matlab.ui.control.Label
+        k1EditField                  matlab.ui.control.NumericEditField
+        k1EditFieldLabel             matlab.ui.control.Label
+        bpsEditField                 matlab.ui.control.NumericEditField
+        bpsEditFieldLabel            matlab.ui.control.Label
+        AmpmoduladaEditField         matlab.ui.control.NumericEditField
+        AmpmoduladaEditFieldLabel    matlab.ui.control.Label
+        AmpportadoraEditField        matlab.ui.control.NumericEditField
+        AmpportadoraEditFieldLabel   matlab.ui.control.Label
+        FrecportadoraEditField       matlab.ui.control.NumericEditField
+        FrecportadoraEditFieldLabel  matlab.ui.control.Label
+        ListBox                      matlab.ui.control.ListBox
+        ListBoxLabel                 matlab.ui.control.Label
+        CalcularButton               matlab.ui.control.Button
+        UIAxes_5                     matlab.ui.control.UIAxes
+        UIAxes3                      matlab.ui.control.UIAxes
+        UIAxes2                      matlab.ui.control.UIAxes
+        UIAxes_4                     matlab.ui.control.UIAxes
+        UIAxes_3                     matlab.ui.control.UIAxes
+        UIAxes_2                     matlab.ui.control.UIAxes
+        UIAxes                       matlab.ui.control.UIAxes
+    end
+
+    % Callbacks that handle component events
+    methods (Access = private)
+
+        % Button pushed function: CalcularButton
+        function CalcularButtonPushed(app, event)
+            BPS = get(app.bpsEditField, 'value');
+            PortA = get(app.AmpportadoraEditField, 'value');
+            kl=get(app.k1EditField, 'value');
+            Portfrec=get(app.FrecportadoraEditField, 'value');
+            ModA=get(app.AmpmoduladaEditField, 'value');
+            
+            %%--------------DATO ASCII------------------
+            
+            
+            
+            dtot = 0;
+            anterior = '';
+            actual = '';
+            
+            prompt1 = ' ';
+            str=get(app.ASCIITextArea, 'value');
+            %str = input(prompt1, 's');
+           
+            C = char(str);
+            unicodeValues = double(C);
+
+            [numRows, numCols] = size(unicodeValues);
+            app.TextArea.Value{1} = ['unicodevalues: ' num2str(unicodeValues)];
+            app.TextArea.Value{2} = ['El número de caracteres ingresados en ASCII es: ' num2str(numCols)];
+            
+            
+            p = [100,0];
+            
+            for cont1=1:1:numCols
+                actualValue = unicodeValues(cont1);
+                
+                d =[dec2bin(actualValue)];
+                
+                num = str2num(d);
+                
+                actual = d(1:end-1);
+            
+                concatenar = strcat(anterior, actual);
+                anterior = concatenar;
+                
+                disp(num2str(d(1:end-1)));
+            
+            end
+            app.TextArea.Value{3} = ['valor bin: ' num2str(concatenar)];
+
+            %fprintf('Valor %s \n', concatenar);
+            
+            %Para pasar el valor binario en string a int:
+            numBin = str2num(concatenar);
+            app.TextArea.Value{4} = ['valor numero: ' num2str(numBin)];
+
+            %fprintf('Valor número %d \n', numBin);
+
+            [fila2, col2] = size(concatenar);
+            for n3=1:1:col2
+                arreglo(n3)=str2num(concatenar(n3));
+            end
+           
+            %Para graficar:
+            t = 0:0.01:col2*1/BPS;
+            %Para el pulso:
+            tp = 0:0.01:col2*1/BPS;
+            
+            for i3=1:1:col2
+                app.TextArea.Value{5} = ['-' num2str(arreglo(i3))];
+                %fprintf('%d-',arreglo(i3));
+            end
+            %Ahora, guardamos los valores altos en posiciones:
+
+            %Hacemos for para encontrar el tamaño:
+            tamPulso = 0;
+            for pos1 =1:1:col2
+                %for 
+                    if arreglo(pos1) == 1
+                        tamPulso = tamPulso + 1;
+                    end
+                %end
+            end
+            pulso = zeros(1,tamPulso);
+            
+            %Comparamos los datos de la señal:
+            cont4=1;
+            for pos=1:1:col2
+               if arreglo(pos) == 1
+                   
+                   pulso(cont4) = pos;
+                   cont4 = cont4+1;
+               
+               end
+            end
+            app.TextArea.Value{6} = ['Posiciones'];
+            %fprintf('Posiciones: \n')
+            
+            x = @rectpuls;
+            y = pulstran(tp*BPS,pulso,x)*ModA;
+
+            [fila, col] = size(t);
+            [fila2, col3] = size(y);
+
+            %Gráfica de la señal cuadrada a partir de valor ASCII.
+            figure();
+            plot(app.UIAxes_2,t, y);
+            %app.UIAxes.Title = ('ASCII');
+            app.UIAxes_2.XLim = [0-1 col2*1/BPS+1];
+            app.UIAxes_2.YLim = [-0.1 ModA+ModA*0.1];
+            app.UIAxes_2.Title.String = 'Valor ASCII';
+            app.UIAxes_2.Title.FontWeight = 'normal';
+            %xlim([0-1 col2*1/BPS+1]);
+            %ylim([-0.1 ModA+ModA*0.1]);
+            %------------------------------------------------------
+
+            %Señal análoga:
+            Vp = PortA*cos(2*pi*Portfrec*t);
+
+            DeltaF = ModA*kl;
+           
+            %fprintf('La desviación máxima de frecuencia es: %d Hz \n', DeltaF);
+
+            %Para las frecuencias de marca, espacio, bits:
+            fMarca = Portfrec-DeltaF;
+            fEspacio = Portfrec + DeltaF;
+            
+            app.TextArea.Value{7} = ['La frecuencia de bits (f_b) es: ' num2str(BPS)];
+            %fprintf('La frecuencia de marca (f_m) es: %f Hz \n', fMarca);
+            %fprintf('La frecuencia de espacio (f_s) es: %f Hz \n', fEspacio);
+            %fprintf('La frecuencia de bits (f_b) es: %d bit/s \n', BPS);
+
+            timeBit = 1/BPS;
+            app.TextArea.Value{8} = ['El tiempo de Bit es: ' num2str(timeBit)];
+            %fprintf('El tiempo de Bit es: %f \n', timeBit);
+            
+            %Con estos valores, podemos calcular el ancho de banda mínimo, el cual
+            %sería:
+            BminFSK = 2*(DeltaF + BPS);
+            
+            %fprintf('El ancho mínimo de banda es: %f \n', BminFSK);
+
+            %--------------------------------------------------------------------------
+
+            %Para el indice de modulación:
+            nMod = abs(fMarca-fEspacio)/BPS;
+            
+            %Con esto, podemos encontrar los coeficientes laterales:
+            %Agregamos el valor de números enteros para encontrar la gráfica:
+            z = 0:0.1:20;
+            
+            %Matriz de ceros para generar primeros 4 valores de Bessel:
+            J = zeros(5,201);
+            
+            for i = 0:4
+                J(i+1,:) = besselj(i,z);
+            end
+
+            %Graficamos la respectiva función de Bessel:
+            plot(app.UIAxes_3,z,J)
+            app.UIAxes_3.XGrid = 'on';
+            app.UIAxes_3.YGrid = 'on';
+            %%grid on
+            %app.UIAxes.Legend = ('J_0','J_1','J_2','J_3','J_4');
+            %legend('J_0','J_1','J_2','J_3','J_4','Location','Best')
+            app.UIAxes_3.Title.String = 'Bessel Functions'; 
+            app.UIAxes_3.XLabel.String = 'z';
+            app.UIAxes_3.YLabel.String = 'J_\nu(z)';
+            
+            
+            %fprintf('Con un indice de modulación %f',nMod); 
+            app.TextArea.Value{9} = ['tenemos las siguientes amplitudes de las frecuencias laterales: '];
+            %fprintf('tenemos las siguientes amplitudes de las frecuencias laterales: \n');
+            
+            %Establecemos un contador para guardar los valores:
+            contarParaM = 0;
+            for jn=0:1:100
+                
+                %jn = 0;
+                if besselj(jn,nMod)>0.1 || besselj(jn,nMod)<-0.1 
+                    contarParaM = contarParaM + 1;
+                end
+                
+                %jn = jn +1;
+                
+                
+            end
+            app.TextArea.Value{10} = ['Valores resultantes ' num2str(contarParaM)];
+            %fprintf('Valores resultantes %d \n', contarParaM);
+            
+            %Para mostrar los valores de las amplitudes de las frecuencias laterales:
+            for ngraf=0:1:contarParaM - 1
+                
+                valorF = besselj(ngraf, nMod);
+                app.TextArea.Value{ngraf+11} = ['Amplitud de la componente lateral j' num2str(ngraf) ': ' num2str(valorF)];
+                
+                %fprintf('Amplitud de la componente lateral j%d: %f \n', ngraf,valorF);
+                
+            end
+
+            bp=1/BPS;% tiempo de bit (ms)
+            br=1/bp; % velocidad de bit
+
+            opc=get(app.ListBox,'value');
+            switch opc
+                case 'OOK'      
+                    OOK = Vp.*y*ModA;
+                    plot(app.UIAxes,t,OOK)
+                    app.UIAxes.Title.String = 'Modulación OOK';
+                    app.UIAxes.XLim = [0-1 col2*1/BPS+1];
+                    app.UIAxes.YLim = [-PortA-PortA*0.1 PortA+PortA*0.1];
+                    app.UIAxes.XLabel.String = 'tiempo(s)';
+                    app.UIAxes.YLabel.String = 'Amplitud(V)';
+                    %Gráfica del espectro de frecuencias:
+
+                    %Gráfica del espectro de frecuencias:
+                    stem(app.UIAxes_4,Portfrec,1)
+                    app.UIAxes_4.XLim = [Portfrec-Portfrec*0.5 Portfrec+Portfrec*0.5];
+                    app.UIAxes_4.YLim = [-0.1 1.1];
+                    app.UIAxes_4.Title.String = 'Espectro de frecuencias OOK';
+                    app.UIAxes_4.XLabel.String = 'Frecuencia (Hz)';
+                    app.UIAxes_4.YLabel.String = 'Amplitud(V)';
+                    
+                    app.DataSignalTextArea.Value{1} = ['La frecuencia de bits (f_b) es: ' num2str(BPS)];
+                    app.DataSignalTextArea.Value{2} = ['El tiempo de Bit es: ' num2str(timeBit)];
+                    
+                case 'FSK'
+                        
+                    fMarcaPrueba=br*10; % frecuencia de la portadora 1
+                    fEspacioPrueba=br*3;
+                    
+                    t4=bp/99:bp/99:bp; 
+                    
+                    FSK=[];
+                    for (j=1:1:length(arreglo))
+                        if (arreglo(j)==1)
+                            y=PortA*cos(2*pi*fMarcaPrueba*t4);
+                        else
+                            y=PortA*cos(2*pi*fEspacioPrueba*t4);
+                        end
+                        FSK=[FSK y];
+                    end
+                    t5=bp/99:bp/99:bp*length(arreglo);
+                    figure()
+                    plot(app.UIAxes,t5,FSK);
+                    app.UIAxes.XLabel.String = 'tiempo(seg)';
+                    app.UIAxes.YLabel.String = 'Amplitud(V)';
+                    
+                    app.UIAxes.YLim = [-PortA-PortA*(0.1) PortA+PortA*(0.1)];
+                   
+                    app.UIAxes.Title.String = 'Modulación FSK';
+                    
+                    stem(app.UIAxes_4,[fMarca Portfrec fEspacio],[1 1 1])
+                    app.UIAxes_4.XLim = [fMarca-fMarca*0.1 fEspacio+fEspacio*0.1];
+                    app.UIAxes_4.YLim = [-0.1 1.1];
+                    
+                    %xlim([fMarca-fMarca*0.1 fEspacio+fEspacio*0.1]);
+                    %ylim([-0.1 1.1]);
+                    app.UIAxes_4.XLabel.String = 'Frecuencia';
+                    app.UIAxes_4.YLabel.String = 'Amplitud (V)';
+                    %xlabel('Frequency')
+                    %ylabel('Power')
+                    app.UIAxes_4.Title.String = 'Espectro de frecuencias FSK';
+                    
+                    
+                    app.DataSignalTextArea.Value{1} = ['La desviación máxima de frecuencia es: ' num2str(DeltaF)];
+                   
+        
+                    %Para las frecuencias de marca, espacio, bits:
+           
+                    app.DataSignalTextArea.Value{2} = ['La frecuencia de marca (f_m) es:: ' num2str(fMarca)];
+                    app.DataSignalTextArea.Value{3} = ['La frecuencia de espacio (f_s) es: ' num2str(fEspacio)];
+                    app.DataSignalTextArea.Value{4} = ['La frecuencia de bits (f_b) es: ' num2str(BPS)];
+               
+        
+                 
+                    app.DataSignalTextArea.Value{5} = ['El tiempo de Bit es: ' num2str(timeBit)];
+                   
+                    
+                    %Con estos valores, podemos calcular el ancho de banda mínimo, el cual
+                    %sería:
+                  
+                    app.DataSignalTextArea.Value{6} = ['El ancho mínimo de banda es: ' num2str(BminFSK)];
+                    app.TextArea.Value{7} = ['Con un indice de modulación ' num2str(nMod)];
+                    
+                case 'BPSK'
+                    cp=[];mod=[];
+
+                    %t6=0:bp*10/99:bp*10; 
+                    
+                    t6=bp/99:bp/99:bp;
+                    for n2=1:length(arreglo);
+                        if arreglo(n2)==0;
+                            actual=-ones(1,99); 
+                            y3=sin(Portfrec*5*t6);
+                        else arreglo(n2)==1;
+                            actual=ones(1,99);  
+                            y3=sin(Portfrec*5*t6);
+                        end
+                        %y3=sin(Portfrec*t6);
+                        cp=[cp actual];
+                        mod=[mod y3];
+                    end
+                    
+                    t7=bp/99:bp/99:bp*length(arreglo);
+                    bpsk=cp.*mod;
+                    
+                  
+                    plot(app.UIAxes,t7,bpsk);
+                    app.UIAxes.Title.String = 'Modulacion BPSK';
+                    app.UIAxes.XLabel.String = 'tiempo(s)';
+                    app.UIAxes.YLabel.String = 'Amplitud(V)';
+                    app.UIAxes.XLim = [0 bp*length(arreglo)];
+                    app.UIAxes.YLim = [-PortA-PortA*(0.1) PortA+PortA*(0.1)];
+                    
+                    %Máxima frecuencia fundamental(fa):
+                    fa = BPS/2;
+                    
+                    %Para el ancho de banda bilateral:
+                    fBPSKmin = Portfrec-BPS/2;
+                    fBPSKmax = Portfrec+BPS/2;
+                    
+                    %Para el ancho de banda mínimo:
+                    BBPSK = BPS;
+                    
+                    
+                    %Visualizar los datos:
+%                     fprintf('La frecuencia mínima de la señal es de: %f \n', fBPSKmin);
+%                     fprintf('La frecuencia máxima de la señal es de: %f \n', fBPSKmax);
+           
+%                     fprintf('El tiempo de Bit es: %f \n', timeBit);
+%                     fprintf('La frecuencia de Bit es: %d \n', BPS);
+%                     fprintf('El ancho mínimo de banda es: %f \n', BBPSK);
+%                     fprintf('Cantidad de condiciones M-aria: 2')
+                 
+                    app.DataSignalTextArea.Value{1} = ['La frecuencia mínima de la señal es de: ' num2str(fBPSKmin)];
+                    app.DataSignalTextArea.Value{2} = ['La frecuencia máxima de la señal es de: ' num2str(fBPSKmax)];
+                    app.DataSignalTextArea.Value{3} = ['El tiempo de Bit es: ' num2str(timeBit)];
+                    app.DataSignalTextArea.Value{4} = ['La frecuencia de Bit es: ' num2str(BPS)];
+                    app.DataSignalTextArea.Value{5} = ['El ancho mínimo de banda es: ' num2str(BBPSK)];
+                    app.DataSignalTextArea.Value{6} = ['Cantidad de condiciones M-aria: 2'];
+                    
+                    %Gráfica del espectro de frecuencias:
+                    stem(app.UIAxes_4,[fBPSKmin Portfrec fBPSKmax],[1 1 1])
+                    app.UIAxes_4.XLim = [fBPSKmin-fBPSKmin*0.1 fBPSKmax+fBPSKmax*0.1];
+                    app.UIAxes_4.YLim = [-0.1 1.1];
+                  
+                    app.UIAxes_4.XLabel.String = 'Frecuencia (Hz)';
+                    app.UIAxes_4.YLabel.String = 'Amplitud(V)';
+                    app.UIAxes_4.Title.String = 'Espectro de frecuencias BPSK';
+                    
+                    %Diagrama de constelación para BPSK:
+                    
+                    j = sqrt(-1);
+
+                    s5 = cos(0)+sin(0)*j;
+                    s6 = cos(pi)+sin(pi)*j;
+      
+                    plot(app.UIAxes_5,[real(s5),real(s6)],[imag(s5),imag(s6)], 'o');
+                    app.UIAxes_5.XLim = [-2 2];
+                    app.UIAxes_5.YLim = [-1.2 1.2];
+                    app.UIAxes_5.Title.String = 'Diagrama de constelación para BPSK';
+                    
+                    %Datos modulación BPSK:
+                    NmodBPSK = abs(fBPSKmin-fBPSKmax)/BPS;
+                    app.DataSignalTextArea.Value{7} = ['Indice de modulacion BPSK:' num2str(NmodBPSK)];
+                    
+
+
+                case 'QPSK'
+                    %Manipulacion por desplazamiento cuaternario de fase:
+                    t8=bp/99:bp/99:bp;
+                    
+                    cosA=[];sinA=[];I=[];Q=[];
+                    
+                    for n=1:2:length(arreglo);
+                    
+                        if arreglo(n)==0 && arreglo(n+1)==1;
+                            actual2=sqrt(2)/2*ones(1,99);
+                            actual3=-sqrt(2)/2*ones(1,99);
+                    
+                        elseif arreglo(n)==0 && arreglo(n+1)==0;
+                            actual2=-sqrt(2)/2*ones(1,99);
+                            actual3=-sqrt(2)/2*ones(1,99);
+                    
+                        elseif arreglo(n)==1 && arreglo(n+1)==0;
+                            actual2=-sqrt(2)/2*ones(1,99);
+                            actual3=sqrt(2)/2*ones(1,99);
+                    
+                        elseif arreglo(n)==1 && arreglo(n+1)==1;
+                            actual2=sqrt(2)/2*ones(1,99);
+                            actual3=sqrt(2)/2*ones(1,99);
+                    
+                        end
+                        
+                        %Realizamos operaciones para las partes seno y coseno:
+                        c=cos(Portfrec*t8);
+                        s=sin(Portfrec*t8);
+                    
+                        %Guardamos la amplitud para la parte sinusoidal:
+                        cosA=[cosA actual2];
+                        %Guardamos la amplitud para la parte cosenoidal:
+                        sinA=[sinA actual3];
+                        
+                        %Para Q:
+                        Q=[Q c];
+                        %Para I:
+                        I=[I s];
+                        
+                        %Según la teoría, los límites van desde:
+                        fQPSKmin = Portfrec-BPS/4;
+                        fQPSKmax = Portfrec+BPS/4;
+                        
+                        qpsk=cosA.*Q+sinA.*I;
+                        figure()
+                        plot(app.UIAxes,qpsk)
+                        app.UIAxes.Title.String = 'Modulacion QPSK';
+                        app.UIAxes.XLim = [0 bp*1000];
+                        app.UIAxes.XLabel.String = 'tiempo(s)';
+                        app.UIAxes.YLabel.String = 'Amplitud(V)';
+                        %El ancho de banda mínimo sería:
+                        BQSPK = BPS/2;
+                        
+                        %Visualizar los datos:
+                        fprintf('La frecuencia mínima de la señal es de: %f \n', fQPSKmin);
+                        fprintf('La frecuencia máxima de la señal es de: %f \n', fQPSKmin);
+                   
+                        fprintf('El tiempo de Bit es: %f \n', timeBit);
+                        fprintf('La frecuencia de Bit es: %d \n', BPS);
+                        fprintf('El ancho mínimo de banda es: %f \n', BQSPK);
+                        fprintf('Cantidad de condiciones M-aria: 4')
+                        
+                        
+                        app.DataSignalTextArea.Value{1} = ['La frecuencia mínima de la señal es de: ' num2str(fQPSKmin)];
+                        app.DataSignalTextArea.Value{2} = ['La frecuencia máxima de la señal es de: ' num2str(fQPSKmax)];
+                        app.DataSignalTextArea.Value{3} = ['El tiempo de Bit es: ' num2str(timeBit)];
+                        app.DataSignalTextArea.Value{4} = ['La frecuencia de Bit es: ' num2str(BPS)];
+                        app.DataSignalTextArea.Value{5} = ['El ancho mínimo de banda es: ' num2str(BQSPK)];
+                        app.DataSignalTextArea.Value{6} = ['Cantidad de condiciones M-aria: 4'];
+                    
+                        
+                        %Gráfica del espectro de frecuencias:
+                        stem(app.UIAxes_4,[fQPSKmin Portfrec fQPSKmax],[1 1 1])
+                        app.UIAxes_4.XLim = [fQPSKmin-fQPSKmin*0.1 fQPSKmax+fQPSKmax*0.1];
+                        app.UIAxes_4.YLim = [-0.1 1.1];
+                      
+                        app.UIAxes_4.XLabel.String = 'Frecuencia (Hz)';
+                        app.UIAxes_4.YLabel.String = 'Amplitud(V)';
+                        app.UIAxes_4.Title.String = 'Espectro de frecuencias QPSK';
+                        
+                        %Diagrama de constelación para QPSK:
+                        
+                        j = sqrt(-1);
+
+                        s1 = cos(pi/4)+sin(pi/4)*j;
+                        s2 = -cos(pi/4)+sin(pi/4)*j;
+                        s3 = cos(-pi/4)+sin(-pi/4)*j;
+                        s4 = -cos(pi/4)+sin(-pi/4)*j;
+                   
+                        plot(app.UIAxes_5,[real(s1),real(s2),real(s3),real(s4)],[imag(s1),imag(s2),imag(s3),imag(s4)], 'o');
+                        app.UIAxes_5.Title.String = 'Diagrama de constelación para QPSK';
+                        NmodQPSK = abs(fQPSKmin-fQPSKmax)/BPS;
+                        app.DataSignalTextArea.Value{7} = ['Indice de modulacion QPSK:' num2str(NmodQPSK)];
+
+                        
+                    end
+            end
+        end
+
+        % Close request function: UIFigure
+        function UIFigureCloseRequest(app, event)
+            delete(app)
+            
+        end
+
+        % Window scroll wheel function: UIFigure
+        function UIFigureWindowScrollWheel(app, event)
+            verticalScrollAmount = event.VerticalScrollAmount;
+            verticalScrollCount = event.VerticalScrollCount;
+            
+        end
+    end
+
+    % Component initialization
+    methods (Access = private)
+
+        % Create UIFigure and components
+        function createComponents(app)
+
+            % Create UIFigure and hide until all components are created
+            app.UIFigure = uifigure('Visible', 'off');
+            app.UIFigure.Color = [1 0 0];
+            app.UIFigure.Position = [100 100 1138 662];
+            app.UIFigure.Name = 'MATLAB App';
+            app.UIFigure.CloseRequestFcn = createCallbackFcn(app, @UIFigureCloseRequest, true);
+            app.UIFigure.WindowScrollWheelFcn = createCallbackFcn(app, @UIFigureWindowScrollWheel, true);
+
+            % Create UIAxes
+            app.UIAxes = uiaxes(app.UIFigure);
+            title(app.UIAxes, 'Title')
+            xlabel(app.UIAxes, 'X')
+            ylabel(app.UIAxes, 'Y')
+            zlabel(app.UIAxes, 'Z')
+            app.UIAxes.Position = [355 446 354 204];
+
+            % Create UIAxes_2
+            app.UIAxes_2 = uiaxes(app.UIFigure);
+            title(app.UIAxes_2, 'Title')
+            xlabel(app.UIAxes_2, 'X')
+            ylabel(app.UIAxes_2, 'Y')
+            zlabel(app.UIAxes_2, 'Z')
+            app.UIAxes_2.Position = [355 231 354 204];
+
+            % Create UIAxes_3
+            app.UIAxes_3 = uiaxes(app.UIFigure);
+            title(app.UIAxes_3, 'Title')
+            xlabel(app.UIAxes_3, 'X')
+            ylabel(app.UIAxes_3, 'Y')
+            zlabel(app.UIAxes_3, 'Z')
+            app.UIAxes_3.Position = [742 444 362 206];
+
+            % Create UIAxes_4
+            app.UIAxes_4 = uiaxes(app.UIFigure);
+            title(app.UIAxes_4, 'Title')
+            xlabel(app.UIAxes_4, 'X')
+            ylabel(app.UIAxes_4, 'Y')
+            zlabel(app.UIAxes_4, 'Z')
+            app.UIAxes_4.Position = [355 22 354 204];
+
+            % Create UIAxes2
+            app.UIAxes2 = uiaxes(app.UIFigure);
+            title(app.UIAxes2, 'Title')
+            xlabel(app.UIAxes2, 'X')
+            ylabel(app.UIAxes2, 'Y')
+            zlabel(app.UIAxes2, 'Z')
+            app.UIAxes2.Position = [-116 737 2 2];
+
+            % Create UIAxes3
+            app.UIAxes3 = uiaxes(app.UIFigure);
+            title(app.UIAxes3, 'Title')
+            xlabel(app.UIAxes3, 'X')
+            ylabel(app.UIAxes3, 'Y')
+            zlabel(app.UIAxes3, 'Z')
+            app.UIAxes3.Position = [-146 767 2 2];
+
+            % Create UIAxes_5
+            app.UIAxes_5 = uiaxes(app.UIFigure);
+            title(app.UIAxes_5, 'Title')
+            xlabel(app.UIAxes_5, 'X')
+            ylabel(app.UIAxes_5, 'Y')
+            zlabel(app.UIAxes_5, 'Z')
+            app.UIAxes_5.Position = [0 30 357 189];
+
+            % Create CalcularButton
+            app.CalcularButton = uibutton(app.UIFigure, 'push');
+            app.CalcularButton.ButtonPushedFcn = createCallbackFcn(app, @CalcularButtonPushed, true);
+            app.CalcularButton.Position = [146 256 100 23];
+            app.CalcularButton.Text = 'Calcular';
+
+            % Create ListBoxLabel
+            app.ListBoxLabel = uilabel(app.UIFigure);
+            app.ListBoxLabel.HorizontalAlignment = 'right';
+            app.ListBoxLabel.Position = [58 583 48 22];
+            app.ListBoxLabel.Text = 'List Box';
+
+            % Create ListBox
+            app.ListBox = uilistbox(app.UIFigure);
+            app.ListBox.Items = {'OOK', 'BPSK', 'FSK', 'QPSK'};
+            app.ListBox.Position = [146 548 100 93];
+            app.ListBox.Value = 'OOK';
+
+            % Create FrecportadoraEditFieldLabel
+            app.FrecportadoraEditFieldLabel = uilabel(app.UIFigure);
+            app.FrecportadoraEditFieldLabel.HorizontalAlignment = 'right';
+            app.FrecportadoraEditFieldLabel.Position = [24 512 84 22];
+            app.FrecportadoraEditFieldLabel.Text = 'Frec portadora';
+
+            % Create FrecportadoraEditField
+            app.FrecportadoraEditField = uieditfield(app.UIFigure, 'numeric');
+            app.FrecportadoraEditField.Position = [145 512 100 22];
+
+            % Create AmpportadoraEditFieldLabel
+            app.AmpportadoraEditFieldLabel = uilabel(app.UIFigure);
+            app.AmpportadoraEditFieldLabel.HorizontalAlignment = 'right';
+            app.AmpportadoraEditFieldLabel.Position = [23 479 84 22];
+            app.AmpportadoraEditFieldLabel.Text = 'Amp portadora';
+
+            % Create AmpportadoraEditField
+            app.AmpportadoraEditField = uieditfield(app.UIFigure, 'numeric');
+            app.AmpportadoraEditField.Position = [146 479 100 22];
+
+            % Create AmpmoduladaEditFieldLabel
+            app.AmpmoduladaEditFieldLabel = uilabel(app.UIFigure);
+            app.AmpmoduladaEditFieldLabel.HorizontalAlignment = 'right';
+            app.AmpmoduladaEditFieldLabel.Position = [20 444 86 22];
+            app.AmpmoduladaEditFieldLabel.Text = 'Amp modulada';
+
+            % Create AmpmoduladaEditField
+            app.AmpmoduladaEditField = uieditfield(app.UIFigure, 'numeric');
+            app.AmpmoduladaEditField.Position = [146 444 100 22];
+
+            % Create bpsEditFieldLabel
+            app.bpsEditFieldLabel = uilabel(app.UIFigure);
+            app.bpsEditFieldLabel.HorizontalAlignment = 'right';
+            app.bpsEditFieldLabel.Position = [106 340 25 22];
+            app.bpsEditFieldLabel.Text = 'bps';
+
+            % Create bpsEditField
+            app.bpsEditField = uieditfield(app.UIFigure, 'numeric');
+            app.bpsEditField.Position = [146 340 100 22];
+
+            % Create k1EditFieldLabel
+            app.k1EditFieldLabel = uilabel(app.UIFigure);
+            app.k1EditFieldLabel.HorizontalAlignment = 'right';
+            app.k1EditFieldLabel.Position = [106 306 25 22];
+            app.k1EditFieldLabel.Text = 'k1';
+
+            % Create k1EditField
+            app.k1EditField = uieditfield(app.UIFigure, 'numeric');
+            app.k1EditField.Position = [146 306 100 22];
+
+            % Create TextAreaLabel
+            app.TextAreaLabel = uilabel(app.UIFigure);
+            app.TextAreaLabel.HorizontalAlignment = 'right';
+            app.TextAreaLabel.Position = [719 413 55 22];
+            app.TextAreaLabel.Text = 'Text Area';
+
+            % Create TextArea
+            app.TextArea = uitextarea(app.UIFigure);
+            app.TextArea.Position = [789 267 312 152];
+
+            % Create ASCIITextAreaLabel
+            app.ASCIITextAreaLabel = uilabel(app.UIFigure);
+            app.ASCIITextAreaLabel.HorizontalAlignment = 'right';
+            app.ASCIITextAreaLabel.Position = [94 370 36 22];
+            app.ASCIITextAreaLabel.Text = 'ASCII';
+
+            % Create ASCIITextArea
+            app.ASCIITextArea = uitextarea(app.UIFigure);
+            app.ASCIITextArea.Position = [147 371 100 21];
+
+            % Create DataSignalTextAreaLabel
+            app.DataSignalTextAreaLabel = uilabel(app.UIFigure);
+            app.DataSignalTextAreaLabel.HorizontalAlignment = 'right';
+            app.DataSignalTextAreaLabel.Position = [711 177 68 22];
+            app.DataSignalTextAreaLabel.Text = 'Data Signal';
+
+            % Create DataSignalTextArea
+            app.DataSignalTextArea = uitextarea(app.UIFigure);
+            app.DataSignalTextArea.Position = [794 49 312 152];
+
+            % Show the figure after all components are created
+            app.UIFigure.Visible = 'on';
+        end
+    end
+
+    % App creation and deletion
+    methods (Access = public)
+
+        % Construct app
+        function app = app14
+
+            % Create UIFigure and components
+            createComponents(app)
+
+            % Register the app with App Designer
+            registerApp(app, app.UIFigure)
+
+            if nargout == 0
+                clear app
+            end
+        end
+
+        % Code that executes before app deletion
+        function delete(app)
+
+            % Delete UIFigure when app is deleted
+            delete(app.UIFigure)
+        end
+    end
+end]]></w:t></w:r></w:p></w:body></w:document>
